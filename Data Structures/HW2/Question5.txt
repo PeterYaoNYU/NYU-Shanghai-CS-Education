@@ -1,0 +1,9 @@
+I am not sure if what I am going to say is correct.
+
+It seems to me that the two terms are equal when n==100, so let me just give you an example.
+
+The left-hand-side 50*nlog10(n)(lhs)
+The right hand side is simply n**2(rhs)
+When n is [0,100] the left hand side is bigger, but after n==100, the right hand side is bigger, and the derivative of the left hand side is smaller than the right hand side when n is larger than 11, so it is always smaller than n**2 after 100.
+
+Also, notice that the big o notation ignores the constants and the lower order parts, so when n is small, those constants and lower-order part may actually play a rather significant role in runtime complexity.
