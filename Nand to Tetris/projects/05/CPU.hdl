@@ -1,0 +1,96 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/05/CPU.hdl
+
+/**
+ * The Hack CPU (Central Processing unit), consisting of an ALU,
+ * two registers named A and D, and a program counter named PC.
+ * The CPU is designed to fetch and execute instructions written in 
+ * the Hack machine language. In particular, functions as follows:
+ * Executes the inputted instruction according to the Hack machine 
+ * language specification. The D and A in the language specification
+ * refer to CPU-resident registers, while M refers to the external
+ * memory location addressed by A, i.e. to Memory[A]. The inM input 
+ * holds the value of this location. If the current instruction needs 
+ * to write a value to M, the value is placed in outM, the address 
+ * of the target location is placed in the addressM output, and the 
+ * writeM control bit is asserted. (When writeM==0, any value may 
+ * appear in outM). The outM and writeM outputs are combinational: 
+ * they are affected instantaneously by the execution of the current 
+ * instruction. The addressM and pc outputs are clocked: although they 
+ * are affected by the execution of the current instruction, they commit 
+ * to their new values only in the next time step. If reset==1 then the 
+ * CPU jumps to address 0 (i.e. pc is set to 0 in next time step) rather 
+ * than to the address resulting from executing the current instruction. 
+ */
+
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to re-start the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // address of next instruction
+
+    PARTS:
+    // Put your code here:
+    And(a=instruction[15], b=instruction[5], out=ins15andd1);
+
+    Mux16(a=instruction, b=ALUoutput, sel=ins15andd1, out=beforeA);
+    
+    Not(in=instruction[15], out=notins15);
+    // Or(a=notins15, b=ins15andd1, out=aregload);
+
+
+    Or(a=notins15, b=instruction[5], out=aregload);
+
+    ARegister(in=beforeA, load=aregload, out=afterAreg, out[0..14]=addressM);
+    // Register(in=beforeA, load=aregload, out=afterAreg, out[0..14]=addressM);
+    Mux16(a=afterAreg, b=inM, sel=instruction[12], out=beforeALU2);
+
+    And(a=instruction[4], b=instruction[15], out=loadD);
+    DRegister(in=ALUoutput, load=loadD, out=beforeALU1);
+    // Register(in=ALUoutput, load=instruction[4], out=beforeALU1);
+
+    And(a = instruction[15], b = instruction[6], out = no);
+    And(a = instruction[15], b = instruction[7], out = f);
+    And(a = instruction[15], b = instruction[8], out = ny);
+    And(a = instruction[15], b = instruction[9], out = zy);
+    And(a = instruction[15], b = instruction[10], out = nx);
+    And(a = instruction[15], b = instruction[11], out = zx);
+
+    ALU(x=beforeALU1, y=beforeALU2, zx=zx, nx=nx, zy=zy, ny=ny, f=f, no=no, out=ALUoutput, out=outM, zr=isZero, ng=isNega);
+
+    And(a=instruction[15], b=instruction[3], out=writeM);
+    // Or(a=notins15, b=ins15andd3, out=writeM);
+
+    And(a=isZero, b=instruction[1], out=zrandj2);
+    And(a=instruction[15], b=zrandj2, out=jumpzr);
+
+    And(a=isNega, b=instruction[2], out=ngandj1);
+    And(a=instruction[15], b=ngandj1, out=jumpng);
+    
+    Or(a=isZero, b=isNega, out=zeroornega);
+    Not(in=zeroornega, out=isPositive);
+    And(a=isPositive, b=instruction[0], out=notngandj3);
+    And(a=instruction[15], b=notngandj3, out=jumppo);
+
+    And(a=instruction[2], b=instruction[1], out=j1andj2);
+    And(a=instruction[0], b=j1andj2, out=j1andj2andj3);
+    And(a=instruction[15], b=j1andj2andj3, out=jumpuncon);
+
+    Or(a=jumpzr, b=jumpng, out=firsttwo);
+    Or(a=jumppo, b=jumpuncon, out=secondtwo);
+    Or(a=firsttwo, b=secondtwo, out=PCload);
+    // Not(in=PCload, out=toinc);
+    // Or(a=toinc, b=notins15, out=toincfinal);
+
+    // PC(in=, load=, inc=, reset=, out=);
+    PC(in=afterAreg, load=PCload, inc=true, reset=reset, out[0..14]=pc);
+}
