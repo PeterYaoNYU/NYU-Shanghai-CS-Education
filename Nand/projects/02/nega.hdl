@@ -1,0 +1,12 @@
+
+CHIP nega {
+    IN  
+        in[16];
+    OUT 
+        out;
+
+    PARTS:
+   // Put you code here:
+
+   Or(a=in[15], b=false, out=out);
+}
