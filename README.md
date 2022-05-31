@@ -1,1 +1,1 @@
-### NYU-Shanghai-CS-Education
+### NYU-Shanghai-CS-Self-Education
